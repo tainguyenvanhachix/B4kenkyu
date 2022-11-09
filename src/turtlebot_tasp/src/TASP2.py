@@ -7,9 +7,9 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, Point
 from tf.transformations import euler_from_quaternion
 
-SAFE_TURN_DISTANCE = 0.480
+SAFE_TURN_DISTANCE = 0.530
 CELL_LENGTH = 0.310
-LINEAR_VEL = 0.02
+LINEAR_VEL = 0.08
 ANGULAR_VEL = 0.2
 SAMPLES_NUMBER = 1
 
@@ -19,7 +19,7 @@ class GoAndTurn():
         self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         position = Point()
         move_cmd = Twist()
-        r = rospy.Rate(50)
+        r = rospy.Rate(30)
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform('odom', 'base_footprint', rospy.Time(), rospy.Duration(1.0))
         (goal_x, goal_y, goal_z) = (0,0,0)
@@ -29,7 +29,7 @@ class GoAndTurn():
         while not rospy.is_shutdown():
             lidar_distances = self.get_scan()
             min_distance = min(lidar_distances)
-            last_distance = 2*CELL_LENGTH
+            last_distance = 5*CELL_LENGTH
             print('distance to wall: '+str(min_distance))
             if min_distance > SAFE_TURN_DISTANCE:
                 print('chia: '+str(goal_z/(pi/2)%4))
@@ -53,6 +53,7 @@ class GoAndTurn():
                     move_cmd.angular.z = 0
                     self.cmd_vel.publish(move_cmd)
                     r.sleep()
+                    r.sleep()
                     distance = sqrt(pow((goal_x - position.x), 2) + pow((goal_y - position.y), 2))
                     if distance > last_distance:
                         print('break')
@@ -67,12 +68,13 @@ class GoAndTurn():
                 print('goal_z: '+str(goal_z))
                 while abs(rotation - goal_z) > 0.01:
                     (position, rotation) = self.get_odom()
-                    if abs((goal_z/(pi/2)) % 4) == 2:
+                    if abs((goal_z/(pi/2)) % 4) == 3:
                         if (rotation -last_rotation)>pi:
-                            round +=1
-                        elif (rotation - last_rotation) < -pi:
                             round -=1
-                        print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation))
+                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation))
+                        elif (rotation - last_rotation) < -pi:
+                            round +=1
+                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation))
                     last_rotation = rotation
                     rotation += round*2*pi
                     if rotation <= goal_z:
@@ -83,8 +85,6 @@ class GoAndTurn():
                         move_cmd.angular.z = -ANGULAR_VEL
                     self.cmd_vel.publish(move_cmd)
                     r.sleep()
-                    if abs(rotation - goal_z) < 0.05:
-                        print('angular different: '+str(goal_z - rotation))
                 print('angular different later: '+str(goal_z-rotation ))
                 print('x, y, z after reach goal:'+str(position.x)+' '+str(position.y)+' '+str(rotation))
                 print(' ')
