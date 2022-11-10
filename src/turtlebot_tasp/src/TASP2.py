@@ -55,7 +55,9 @@ class GoAndTurn():
                     r.sleep()
                     r.sleep()
                     distance = sqrt(pow((goal_x - position.x), 2) + pow((goal_y - position.y), 2))
-                    if distance > last_distance:
+                    if format(distance,".3f") > format(last_distance,".3f"):
+                        print('distance: '+str(distance))
+                        print('last_dis: '+str(last_distance))
                         print('break')
                         break
                     last_distance = distance
@@ -71,10 +73,10 @@ class GoAndTurn():
                     if abs((goal_z/(pi/2)) % 4) == 3:
                         if (rotation -last_rotation)>pi:
                             round -=1
-                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation))
+                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation/pi))
                         elif (rotation - last_rotation) < -pi:
                             round +=1
-                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation))
+                            print('round: '+str(round)+'   last_rotation: '+str(last_rotation)+ '   rotation: '+str(rotation/pi))
                     last_rotation = rotation
                     rotation += round*2*pi
                     if rotation <= goal_z:
