@@ -19,9 +19,10 @@ class GoAndTurn():
         self.X = 0
         self.Y = 0
         self.goal_z = 0
+        self.round = 0
         self.position = Point()
         self.move_cmd = Twist()
-        self.r = rospy.Rate(10)
+        self.r = rospy.Rate(40)
         self.last_rotation = 0
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform('odom', 'base_footprint', rospy.Time(), rospy.Duration(1.0))
@@ -33,7 +34,6 @@ class GoAndTurn():
         print('check_around')
         # btp = self.back_tracking_point()
         while btp > 0:
-            print('start_while_btp')
             front_min_distance = min(self.get_scan(0))
             left_min_distance = min(self.get_scan(90))
             right_min_distance = min(self.get_scan(-90))
@@ -52,24 +52,35 @@ class GoAndTurn():
                     self.Y -=1; right_point = self.X - 1; left_point = self.X + 1; center_point = self.Y
                 self.go_straight()
             elif left_min_distance > SAFE_DISTANCE and right_min_distance > SAFE_DISTANCE:
-                print('right_dis: '+str(right_min_distance))
+                print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 right_distance = sqrt(pow((center_point), 2) + pow((right_point), 2))
                 left_distance = sqrt(pow((center_point), 2) + pow((left_point), 2))
                 if self.X == 0 or self.Y == 0:
                     if left_min_distance > right_min_distance:
+                        print('turn left xy=0')
                         self.turn('left')
                     else:
+                        print('turn right xy=0')
                         self.turn('right')
                 elif left_distance > right_distance:
+                    print('turn left > right')
                     self.turn('left')
                 else:
+                    print('turn right > left')
                     self.turn('right')
             elif left_min_distance > SAFE_DISTANCE:
+                print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
+                print('turn just left')
                 self.turn('left')
             elif right_min_distance > SAFE_DISTANCE:
+                print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
+                print('turn just right')
                 self.turn('right')
             else:
+                print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
+                print('go ptp')
                 self.point_to_point()
+            print('self.position.x/0.31: '+str(self.position.x/0.31)+'  self.position.y/0.31: '+str(self.position.y/0.31)+'  self.rotation: '+str(self.rotation))
             print(' ')
 
     def go_straight(self):
@@ -79,14 +90,15 @@ class GoAndTurn():
         goal_y = self.Y*CELL_LENGTH
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         print('distance: '+str(distance))
-        while distance > 0.005:
+        while distance > 0.001:
             (self.position, no_use) = self.get_odom()
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
             self.r.sleep()
+            self.r.sleep()
             distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
-            if format(distance,".3f") > format(last_distance,".3f"):
+            if format(distance,".4f") > format(last_distance,".4f"):
                 print('break')
                 break
             last_distance = distance
@@ -96,16 +108,9 @@ class GoAndTurn():
             self.goal_z += pi/2
         elif turn_direction == 'right':
             self.goal_z -= pi/2
-        while abs(self.rotation - self.goal_z) > 0.01:
-            (no_use, rotation) = self.get_odom()
-            if (self.goal_z/(pi/2)) % 4 == 3 or (self.goal_z/(pi/2)) % 4 == -3:
-                if (rotation - self.last_rotation) > pi:
-                    round -=1
-                elif (rotation - self.last_rotation) < -pi:
-                    round +=1
-            self.last_rotation = rotation
-            self.rotation = rotation + round*2*pi
-            if rotation <= self.goal_z:
+        print('self.goal_z: '+ str(self.goal_z))
+        while abs(self.goal_z - self.rotation) > 0.01:
+            if self.rotation <= self.goal_z:
                 self.move_cmd.linear.x = 0.00
                 self.move_cmd.angular.z = ANGULAR_VEL
             else:
@@ -113,6 +118,18 @@ class GoAndTurn():
                 self.move_cmd.angular.z = -ANGULAR_VEL
             self.cmd_vel.publish(self.move_cmd)
             self.r.sleep()
+            (no_use, rotation) = self.get_odom()
+            if (self.goal_z/(pi/2)) % 4 == 3 or (self.goal_z/(pi/2)) % 4 == -3:
+                if (rotation - self.last_rotation) > pi:
+                    self.round -=1
+                    print('self.round: '+str(self.round))
+                elif (rotation - self.last_rotation) < -pi:
+                    self.round +=1
+                    print('self.round: '+str(self.round))
+            self.last_rotation = rotation
+            self.rotation = rotation + self.round*2*pi
+        self.move_cmd.angular.z = 0
+        self.cmd_vel.publish(self.move_cmd)
 
     def point_to_point(self):
         print('COMMING SOON')
