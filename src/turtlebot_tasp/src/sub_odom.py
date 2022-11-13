@@ -2,6 +2,8 @@
 import rospy
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import math
+from math import sqrt, pow, pi, atan2
 
 roll = pitch = yaw = 0.0
 
@@ -17,6 +19,6 @@ sub = rospy.Subscriber ('/odom', Odometry, get_rotation)
 
 r = rospy.Rate(10)
 while not rospy.is_shutdown():    
-    quat = quaternion_from_euler (roll, pitch,yaw)
-    print('quat.z, quat.w, yaw: '+str(format(quat[2],".4f"))+'   '+str(format(quat[3],".4f"))+'   '+str(format(yaw,".4f")))
+    quat = quaternion_from_euler (roll,pitch,yaw)
+    print('quat.z, quat.w, yaw: '+str(quat[2])+'   '+str(quat[3])+'   '+str(format(yaw,".4f")))
     r.sleep()
