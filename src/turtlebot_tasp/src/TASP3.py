@@ -9,7 +9,7 @@ from tf.transformations import euler_from_quaternion
 
 SAMPLES_NUMBER = 1
 CELL_LENGTH = 0.310
-SAFE_DISTANCE = 0.530
+SAFE_DISTANCE = 0.550
 LINEAR_VEL = 0.05
 ANGULAR_VEL = 0.2
 
@@ -38,7 +38,7 @@ class GoAndTurn():
             left_min_distance = min(self.get_scan(90))
             right_min_distance = min(self.get_scan(-90))
             turtlebot_direction = self.check_direction()
-            print('turtlebot_direction: '+turtlebot_direction)
+            print('turtlebot_direction: '+ turtlebot_direction)
             if front_min_distance > SAFE_DISTANCE:
                 print('front_dis: '+str(front_min_distance))
                 if turtlebot_direction == 'x_positive':
@@ -46,10 +46,13 @@ class GoAndTurn():
                     print('self.X: '+str(self.X))
                 elif turtlebot_direction == 'y_positive':
                     self.Y +=1; right_point = self.X + 1; left_point = self.X - 1; center_point = self.Y
+                    print('self.Y: '+str(self.Y))
                 elif turtlebot_direction == 'x_negative':
                     self.X -=1; right_point = self.Y + 1; left_point = self.Y - 1; center_point = self.X
+                    print('self.X: '+str(self.X))
                 elif turtlebot_direction == 'y_negative':
                     self.Y -=1; right_point = self.X - 1; left_point = self.X + 1; center_point = self.Y
+                    print('self.Y: '+str(self.Y))
                 self.go_straight()
             elif left_min_distance > SAFE_DISTANCE and right_min_distance > SAFE_DISTANCE:
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
@@ -80,26 +83,32 @@ class GoAndTurn():
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 print('go ptp')
                 self.point_to_point()
+            (no_use, rotation) = self.get_odom()
+            self.rotation = rotation + self.round*2*pi
             print('self.position.x/0.31: '+str(self.position.x/0.31)+'  self.position.y/0.31: '+str(self.position.y/0.31)+'  self.rotation: '+str(self.rotation))
             print(' ')
 
     def go_straight(self):
         print('go_traight')
-        last_distance = CELL_LENGTH
+        last_distance = 2*CELL_LENGTH
         goal_x = self.X*CELL_LENGTH
         goal_y = self.Y*CELL_LENGTH
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         print('distance: '+str(distance))
-        while distance > 0.001:
-            (self.position, no_use) = self.get_odom()
+        (no_use, rotation) = self.get_odom()
+        self.rotation = rotation + self.round*2*pi
+        print('self.rotation: '+str(self.rotation))
+        while distance > 0.003:
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
             self.r.sleep()
             self.r.sleep()
+            (self.position, no_use) = self.get_odom()
             distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
             if format(distance,".4f") > format(last_distance,".4f"):
                 print('break')
+                print('distance vs last_distance'+str(format(distance,".4f"))+' vs '+str(format(last_distance,".4f")))
                 break
             last_distance = distance
 
@@ -108,7 +117,7 @@ class GoAndTurn():
             self.goal_z += pi/2
         elif turn_direction == 'right':
             self.goal_z -= pi/2
-        print('self.goal_z: '+ str(self.goal_z))
+        print('self.goal_z vs self.rotation: '+ str(self.goal_z) + ' vs '+str(self.rotation))
         while abs(self.goal_z - self.rotation) > 0.01:
             if self.rotation <= self.goal_z:
                 self.move_cmd.linear.x = 0.00
