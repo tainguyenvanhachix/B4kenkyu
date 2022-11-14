@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-import rospy
 import math
-from math import sqrt, pow, pi, atan2
+from math import atan2, pi, pow, sqrt
+
+import rospy
 import tf
+from geometry_msgs.msg import Point, Quaternion, Twist
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 SAMPLES_NUMBER = 1
 CELL_LENGTH = 0.310
 SAFE_DISTANCE = 0.550
+SAFE_DISTANCE_SIDE = SAFE_DISTANCE - 0.064
+SAFE_DISTANCE_BACK = SAFE_DISTANCE_SIDE - 2*0.064
 LINEAR_VEL = 0.05
 ANGULAR_VEL = 0.2
 QUAT_90DEGREE = quaternion_from_euler (0, 0, pi/2)
@@ -24,6 +27,9 @@ class GoAndTurn():
         self.Y = 0
         self.goal_quat_z = 0
         self.goal_quat_w = 1
+        self.trajectory = []
+        self.wall =[]
+        self.back_tracking_point = [(0,0)]
         self.position = Point()
         self.quat = Quaternion()
         self.move_cmd = Twist()
@@ -34,16 +40,30 @@ class GoAndTurn():
         self.check_around_and_go()
 
     def check_around_and_go(self):
-        btp = 1
-        print('check_around')
-        # btp = self.back_tracking_point()
-        while btp > 0:
-            front_min_distance = min(self.get_scan(0))
-            left_min_distance = min(self.get_scan(90))
-            right_min_distance = min(self.get_scan(-90))
-            turtlebot_direction = self.check_direction()
-            print('turtlebot_direction: '+ turtlebot_direction)
-            if front_min_distance > SAFE_DISTANCE:
+        if min(self.get_scan(-180)) < SAFE_DISTANCE_BACK:
+            self.wall.append((self.X-1,self.Y))
+        front_min_distance = min(self.get_scan(0))
+        left_min_distance = min(self.get_scan(90))
+        right_min_distance = min(self.get_scan(-90))
+        turtlebot_direction = self.check_direction()
+        print('turtlebot_direction: '+ turtlebot_direction)
+        self.add_wall(turtlebot_direction, front_min_distance, left_min_distance, right_min_distance)
+        self.add_trajectory()
+        self.add_back_tracking()
+        print('self.wall: ')
+        print(self.wall)
+        print('self.trajectory: ')
+        print(self.trajectory)
+        print('self.back_tracking_point: ')
+        print(self.back_tracking_point)
+        while len(self.back_tracking_point) > 0:
+            (front_X,front_Y) = self.check_front(self.X,self.Y,turtlebot_direction)
+            (left_X,left_Y) = self.check_left(self.X,self.Y,turtlebot_direction)
+            (right_X,right_Y) = self.check_right(self.X,self.Y,turtlebot_direction)
+            if (front_X,front_Y) not in self.back_tracking_point:
+                self.move_cmd.linear.x = 0
+                self.cmd_vel.publish(self.move_cmd)
+            if (front_X,front_Y) in self.back_tracking_point:
                 print('front_dis: '+str(front_min_distance))
                 if turtlebot_direction == 'x_positive':
                     self.X +=1; right_point = self.Y - 1; left_point = self.Y + 1; center_point = self.X
@@ -58,7 +78,7 @@ class GoAndTurn():
                     self.Y -=1; right_point = self.X - 1; left_point = self.X + 1; center_point = self.Y
                     print('self.Y: '+str(self.Y))
                 self.go_straight()
-            elif left_min_distance > SAFE_DISTANCE and right_min_distance > SAFE_DISTANCE:
+            elif (left_X,left_Y) in self.back_tracking_point and (right_X,right_Y) in self.back_tracking_point:
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 right_distance = sqrt(pow((center_point), 2) + pow((right_point), 2))
                 left_distance = sqrt(pow((center_point), 2) + pow((left_point), 2))
@@ -75,11 +95,11 @@ class GoAndTurn():
                 else:
                     print('turn right > left')
                     self.turn('right')
-            elif left_min_distance > SAFE_DISTANCE:
+            elif (left_X,left_Y) in self.back_tracking_point:
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 print('turn just left')
                 self.turn('left')
-            elif right_min_distance > SAFE_DISTANCE:
+            elif (right_X,right_Y) in self.back_tracking_point:
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 print('turn just right')
                 self.turn('right')
@@ -87,9 +107,108 @@ class GoAndTurn():
                 print('right_dis - lef_dis: '+str(right_min_distance)+' - '+str(left_min_distance))
                 print('go ptp')
                 self.point_to_point()
+            
+            front_min_distance = min(self.get_scan(0))
+            left_min_distance = min(self.get_scan(90))
+            right_min_distance = min(self.get_scan(-90))
+            turtlebot_direction = self.check_direction()
+            print('turtlebot_direction: '+ turtlebot_direction)
+            self.add_wall(turtlebot_direction, front_min_distance, left_min_distance, right_min_distance)
+            self.add_trajectory()
+            self.add_back_tracking()
+            print('self.wall: ')
+            print(self.wall)
+            print('self.trajectory: ')
+            print(self.trajectory)
+            print('self.back_tracking_point: ')
+            print(self.back_tracking_point)
+            if len(self.back_tracking_point) == 0:
+                self.move_cmd.linear.x = 0
+                self.move_cmd.angular.z = 0
+                self.cmd_vel.publish(self.move_cmd)
             (self.position, self.quat) = self.get_odom()
             print('self.position.x/0.31: '+str(self.position.x/0.31)+'  self.position.y/0.31: '+str(self.position.y/0.31)+'  self.quat_z_and_w: '+str(self.quat.z)+'  '+str(self.quat.w))
             print(' ')
+
+    def add_back_tracking(self):
+        surroundings = [(self.X+1,self.Y),
+                        (self.X,self.Y+1),
+                        (self.X-1,self.Y),
+                        (self.X,self.Y-1)]
+        for surrounding in surroundings:
+            if surrounding not in self.wall:
+                if surrounding not in self.trajectory:
+                    self.back_tracking_point.append(surrounding)
+                    self.back_tracking_point = list(dict.fromkeys(self.back_tracking_point))
+
+    def add_wall(self,direction,front,left,right):
+        if front <= SAFE_DISTANCE:
+            if direction == 'x_positive':
+                self.wall.append((self.X+1,self.Y))
+            elif direction == 'y_positive':
+                self.wall.append((self.X,self.Y+1))
+            elif direction == 'x_negative':
+                self.wall.append((self.X-1,self.Y))
+            elif direction == 'y_negative':
+                self.wall.append((self.X,self.Y-1))
+        if left <= SAFE_DISTANCE_SIDE:
+            if direction == 'x_positive':
+                self.wall.append((self.X,self.Y+1))
+            elif direction == 'y_positive':
+                self.wall.append((self.X-1,self.Y))
+            elif direction == 'x_negative':
+                self.wall.append((self.X,self.Y-1))
+            elif direction == 'y_negative':
+                self.wall.append((self.X+1,self.Y))
+        if right <= SAFE_DISTANCE_SIDE:
+            if direction == 'x_positive':
+                self.wall.append((self.X,self.Y-1))
+            elif direction == 'y_positive':
+                self.wall.append((self.X+1,self.Y))
+            elif direction == 'x_negative':
+                self.wall.append((self.X,self.Y+1))
+            elif direction == 'y_negative':
+                self.wall.append((self.X-1,self.Y))
+        self.wall = list(dict.fromkeys(self.wall))
+
+    def add_trajectory(self):
+        self.trajectory.append((self.X, self.Y))
+        self.trajectory = list(dict.fromkeys(self.trajectory))
+        if (self.X,self.Y) in self.back_tracking_point:
+            self.back_tracking_point.remove((self.X, self.Y))
+
+    def check_front(self,X,Y,direction):
+        if direction == 'x_positive':
+            X+=1
+        elif direction == 'y_positive':
+            Y+=1
+        elif direction == 'x_negative':
+            X-=1
+        elif direction == 'y_negative':
+            Y-=1
+        return (X,Y)
+
+    def check_left(self,X,Y,direction):
+        if direction == 'x_positive':
+            Y+=1
+        elif direction == 'y_positive':
+            X-=1
+        elif direction == 'x_negative':
+            Y-=1
+        elif direction == 'y_negative':
+            X+=1
+        return (X,Y)
+
+    def check_right(self,X,Y,direction):
+        if direction == 'x_positive':
+            Y-=1
+        elif direction == 'y_positive':
+            X+=1
+        elif direction == 'x_negative':
+            Y+=1
+        elif direction == 'y_negative':
+            X-=1
+        return (X,Y)
 
     def go_straight(self):
         print('go_traight')
@@ -209,9 +328,6 @@ class GoAndTurn():
         elif self.goal_quat_z == - QUAT_90DEGREE[2]:
             direction = 'y_negative'
         return direction
-
-    def back_tracking_point():
-        print('COMMING SOON')
 
     # Get scan_filter array that contains distance from lidar to obstacle
     def get_scan(self, scan_direction):
