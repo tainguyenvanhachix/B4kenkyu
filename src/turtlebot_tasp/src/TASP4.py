@@ -60,9 +60,6 @@ class GoAndTurn():
             (front_X,front_Y) = self.check_front(self.X,self.Y,turtlebot_direction)
             (left_X,left_Y) = self.check_left(self.X,self.Y,turtlebot_direction)
             (right_X,right_Y) = self.check_right(self.X,self.Y,turtlebot_direction)
-            if (front_X,front_Y) not in self.back_tracking_point:
-                self.move_cmd.linear.x = 0
-                self.cmd_vel.publish(self.move_cmd)
             if (front_X,front_Y) in self.back_tracking_point:
                 print('front_dis: '+str(front_min_distance))
                 if turtlebot_direction == 'x_positive':
@@ -230,6 +227,9 @@ class GoAndTurn():
                 print('distance vs last_distance: '+str(format(distance,".4f"))+' vs '+str(format(last_distance,".4f")))
                 break
             last_distance = distance
+        if min(self.get_scan(0)) < SAFE_DISTANCE:
+            self.move_cmd.linear.x = 0
+            self.cmd_vel.publish(self.move_cmd)
         print('distance later: '+str(distance))
 
     def turn(self,turn_direction):
