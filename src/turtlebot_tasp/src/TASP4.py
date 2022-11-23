@@ -450,9 +450,6 @@ class GoAndTurn():
     # Get scan_filter array that contains distance from lidar to obstacle
     def get_scan(self, scan_direction):
         scan = rospy.wait_for_message('scan', LaserScan)
-        while scan.intensities[scan_direction]==0: # Reciving messages from scan topic if intensities are good
-            scan = rospy.wait_for_message('scan', LaserScan)
-
         scan_filter = []
         scan_filter_after = []
         samples = len(scan.ranges)
