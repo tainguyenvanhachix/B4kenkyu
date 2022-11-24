@@ -1,9 +1,10 @@
 To do list
-- acurrate rotation
-- accureta going straght
-- 
+- OcuppancyGrid map
+- Teian BTP
+- Teian Back without turn
+- Current measure
 
-Install
+Install navigation package to have map_server package
 - git clone https://github.com/ros-planning/navigation.git (branch: noetic-devel)
 - catkin_make error
 - sudo apt install cmake libsdl2-dev g++ (not work)
