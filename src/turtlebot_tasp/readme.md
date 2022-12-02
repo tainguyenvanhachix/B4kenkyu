@@ -1,6 +1,5 @@
 To do list
 - OcuppancyGrid map
-- Teian BTP
 
 Install navigation package to have map_server package
 - git clone https://github.com/ros-planning/navigation.git (branch: noetic-devel)
