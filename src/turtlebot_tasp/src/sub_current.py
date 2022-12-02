@@ -9,10 +9,10 @@ current = 0
 count = 0
 analog = 0
 data_list = []
-cols_name = ['time','current']
+cols_name = ['time[s]', 'duration[s]', 'current[A]', 'voltage[V]', 'energy[J]']
 
 def callback(data):
-    global count, current, analog, data_list, cols_name
+    global count, current, analog, data_list, cols_name, last_time, time
     if count < 9:
         analog += data.sonar
         count +=1
@@ -22,11 +22,17 @@ def callback(data):
         current = (( 5 / 1560 ) * analog - 2.5)/0.185
         rospy.loginfo(current)
         now = rospy.get_rostime()
+        last_time = time
         time = now.secs + now.nsecs*pow(10,-9)
+        voltage = data.battery
+        energy = current*voltage*(time - last_time)
 
         data = {
-                'time': time,
-                'current': current
+                'time[s]': time,
+                'duration[s]': time - last_time,
+                'current[A]': current,
+                'voltage[V]': voltage,
+                'energy[J]': energy
             }
         data_list.append(data)
 
@@ -39,6 +45,7 @@ def listener():
 
 if __name__ == '__main__':
     filename = input("Input the name of file for saving: ")
+    time = 0
     listener()
     df = pd.DataFrame(data_list, columns=cols_name)
     csv_folder=path.dirname(__file__)
