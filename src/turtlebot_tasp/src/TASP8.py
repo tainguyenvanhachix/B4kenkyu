@@ -4,6 +4,7 @@ import rospy
 import tf
 from math import atan2, pi, pow, sqrt
 from geometry_msgs.msg import Point, Quaternion, Twist
+from turtlebot_tasp.msg import mapdataPoint
 from visualization_msgs.msg import Marker, MarkerArray
 from sensor_msgs.msg import LaserScan
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -12,8 +13,10 @@ from setting import *
 class GoAndTurn():
     def __init__(self):
         # Declares that node is publishing to the cmd_vel topic
-        self.cmd_vel = rospy.Publisher('cmd_vel',Twist,queue_size=5)
+        self.cmd_vel = rospy.Publisher('cmd_vel',Twist,queue_size=10)
         self.trajectory_line_maker = rospy.Publisher('trajectory_marker', MarkerArray, queue_size=1)
+        self.pub_wall = rospy.Publisher('wall',mapdataPoint,queue_size=1000)
+        self.pub_BTP = rospy.Publisher('BTP',mapdataPoint,queue_size=1000)
 
         # The starting point
         self.X = 0
@@ -21,12 +24,23 @@ class GoAndTurn():
         self.goal_quat_z = 0
         self.goal_quat_w = 1
 
+        # wall and BTP data for map
+        self.wall_point = mapdataPoint()
+        self.BTP_point = mapdataPoint()
+        self.r1 = rospy.Rate(20)
+        self.r2 = rospy.Rate(8)
+
         # Setting of wall, trajectory, backtracking point at the beginging
         self.trajectory = []
-        # self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,-1),(3,-1),(4,0),(4,1),(4,2),(4,3),(3,4),(2,4),(1,4),(0,3)]
-        self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,0),(2,1),(3,1),(4,2),(3,3),(2,3),(1,3),(0,3)]
-        # self.wall =[(-1,0),(-1,1),(0,-1),(1,-1),(1,-2),(2,-3),(3,-2),(3,-1),(3,0),(3,1),(2,2),(1,2),(0,2)]
+        # self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,0),(2,1),(3,1),(4,2),(3,3),(2,3),(1,3),(0,3)] #1
+        # self.wall =[(-1,0),(-1,1),(0,-1),(1,-1),(1,-2),(2,-3),(3,-2),(3,-1),(3,0),(3,1),(2,2),(1,2),(0,2)] #2
+        self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,-1),(3,-1),(4,0),(4,1),(4,2),(4,3),(3,4),(2,4),(1,4),(0,3)] #3
+
         self.back_tracking_point = [(0,0)]
+        self.BTP_point = mapdataPoint()
+        (self.BTP_point.x,self.BTP_point.y) = (0,0)
+        self.r2.sleep()
+        self.pub_BTP.publish(self.BTP_point)
 
         self.position = Point()
         self.quat = Quaternion()
@@ -35,9 +49,6 @@ class GoAndTurn():
         self.marker1 = Marker()
         self.marker2 = Marker()
         self.sum_marker.markers = [self.marker1,self.marker2]
-
-        self.r1 = rospy.Rate(20)
-        self.r2 = rospy.Rate(8)
 
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform('odom', 'base_footprint', rospy.Time(), rospy.Duration(1.0))
@@ -117,7 +128,7 @@ class GoAndTurn():
         # Check if obstacle behind robot at the beginning
         if min(self.get_scan(-180)) < SAFE_DISTANCE_BEHIND:
             self.wall.append((self.X-1,self.Y))
-
+            self.publish_wall()
         # Publish the Marker
         self.trajectory_line_maker.publish(self.sum_marker)
         
@@ -253,6 +264,7 @@ class GoAndTurn():
             if surrounding not in self.wall:
                 if surrounding not in self.trajectory:
                     self.back_tracking_point.append(surrounding)
+                    self.publish_BTP()
                     self.back_tracking_point = list(dict.fromkeys(self.back_tracking_point))
                     # Add BTP marker
                     self.sphere_point = Point()
@@ -272,6 +284,7 @@ class GoAndTurn():
                 self.wall.append((self.X-1,self.Y))
             elif direction == 'y_negative':
                 self.wall.append((self.X,self.Y-1))
+            self.publish_wall()
         if left <= SAFE_DISTANCE_FOOTBASE:
             if direction == 'x_positive':
                 self.wall.append((self.X,self.Y+1))
@@ -281,6 +294,7 @@ class GoAndTurn():
                 self.wall.append((self.X,self.Y-1))
             elif direction == 'y_negative':
                 self.wall.append((self.X+1,self.Y))
+            self.publish_wall()
         if right <= SAFE_DISTANCE_FOOTBASE:
             if direction == 'x_positive':
                 self.wall.append((self.X,self.Y-1))
@@ -290,6 +304,7 @@ class GoAndTurn():
                 self.wall.append((self.X,self.Y+1))
             elif direction == 'y_negative':
                 self.wall.append((self.X-1,self.Y))
+            self.publish_wall()
         self.wall = list(dict.fromkeys(self.wall))
 
     def add_trajectory(self):
@@ -297,6 +312,19 @@ class GoAndTurn():
         # self.trajectory = list(dict.fromkeys(self.trajectory))
         if (self.X,self.Y) in self.back_tracking_point:
             self.back_tracking_point.remove((self.X, self.Y))
+# 2-----------------------------------------------------------------
+    # Publish added wall
+    def publish_wall(self):
+        self.wall_point = mapdataPoint()
+        (self.wall_point.x,self.wall_point.y) = self.wall[-1]
+        self.pub_wall.publish(self.wall_point)
+        print(self.wall_point)
+
+    # Pulish added BTP
+    def publish_BTP(self):
+        self.BTP_point = mapdataPoint()
+        (self.BTP_point.x,self.BTP_point.y) = self.back_tracking_point[-1]
+        self.pub_BTP.publish(self.BTP_point)
 # 2-----------------------------------------------------------------
 
     def check_front(self,X,Y,direction):
