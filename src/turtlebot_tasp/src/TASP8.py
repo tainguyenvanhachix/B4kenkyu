@@ -33,8 +33,9 @@ class GoAndTurn():
         # Setting of wall, trajectory, backtracking point at the beginging
         self.trajectory = []
         # self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,0),(2,1),(3,1),(4,2),(3,3),(2,3),(1,3),(0,3)] #1
-        # self.wall =[(-1,0),(-1,1),(0,-1),(1,-1),(1,-2),(2,-3),(3,-2),(3,-1),(3,0),(3,1),(2,2),(1,2),(0,2)] #2
-        self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,-1),(3,-1),(4,0),(4,1),(4,2),(4,3),(3,4),(2,4),(1,4),(0,3)] #3
+        self.wall =[(-1,0),(-1,1),(0,-1),(1,-1),(1,-2),(2,-3),(3,-2),(3,-1),(3,0),(3,1),(2,2),(1,2),(0,2)] #2
+        # self.wall =[(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,-1),(3,-1),(4,0),(4,1),(4,2),(4,3),(3,4),(2,4),(1,4),(0,3)] #3
+        # self.wall =[(3,0),(1,3),(2,3),(3,3),(-1,-1),(4,-1),(4,4),(0,4),(-1,3),(-1,0),(-1,1),(-1,2),(0,-1),(1,-1),(2,-1),(3,-1),(4,0),(4,1),(4,2),(4,3),(3,4),(2,4),(1,4),(0,3)] #3.2
 
         self.back_tracking_point = [(0,0)]
         self.BTP_point = mapdataPoint()
@@ -368,11 +369,10 @@ class GoAndTurn():
         goal_y = self.Y*CELL_LENGTH
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         print('distance: '+str(distance))
-        while distance > 0.003:
+        while distance > 0.01:
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
-            self.r2.sleep()
             (self.position, no_use, no_use) = self.get_odom()
             distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
             if (format(distance,".4f") > format(last_distance,".4f")) and (distance < 0.2):
@@ -388,6 +388,8 @@ class GoAndTurn():
             self.move_cmd.linear.x = 0
             self.cmd_vel.publish(self.move_cmd)
 
+        (self.position, no_use, no_use) = self.get_odom()
+        distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         self.add_trajectory()
         print('distance later: '+str(distance))
 # 4-----------------------------------------------------------------
@@ -478,6 +480,8 @@ class GoAndTurn():
 
     def point_to_point(self):
         min_distance = 0
+        goal_x = 0
+        goal_y = 0
         goal_angle = 0
         goal_angle_real = 0
         directly = False
@@ -487,17 +491,17 @@ class GoAndTurn():
         for backtracking_point in self.back_tracking_point:
             if self.check_go_directly(self.X, self.Y, backtracking_point):
                 # Assign nearest BTP
-                (goal_x,goal_y,min_distance,goal_angle,goal_angle_real) = self.nearest_BTP(backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle)
+                (goal_x,goal_y,min_distance,goal_angle,goal_angle_real) = self.nearest_BTP(backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle,goal_x,goal_y)
 
                 directly = True
-
+                print(directly)
         # If can not go directly, go to intermediary point
         if directly == False:
             # Assign goal to the nearest BTP
             for backtracking_point in self.back_tracking_point:
                 print('check nearest with cannot directly')
-                (goal_x,goal_y,min_distance,goal_angle,goal_angle_real) = self.nearest_BTP(backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle)
-
+                (goal_x,goal_y,min_distance,goal_angle,goal_angle_real) = self.nearest_BTP(backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle,goal_x,goal_y)
+            print('cannot go directly')
             # Find intermediary point
             (goal_x, goal_y, goal_angle, goal_angle_real) = self.find_intermediary(goal_x, goal_y)
 
@@ -552,7 +556,7 @@ class GoAndTurn():
                     check = False
         return check
 
-    def nearest_BTP(self, backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle):
+    def nearest_BTP(self, backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle,goal_x,goal_y):
         distance = sqrt(pow((backtracking_point[0] - self.X), 2) + pow((backtracking_point[1] - self.Y), 2))
 
         # Assign goal to BTP has shorter than min_distance
@@ -569,7 +573,7 @@ class GoAndTurn():
                 (goal_x,goal_y) = backtracking_point
                 goal_angle = angle
                 goal_angle_real = atan2(backtracking_point[1]*CELL_LENGTH - self.position.y, backtracking_point[0]*CELL_LENGTH - self.position.x)
-
+        print(str(goal_x)+' '+str(goal_y))
         return (goal_x,goal_y,min_distance,goal_angle,goal_angle_real)
 
     def find_intermediary(self, goal_x, goal_y):
@@ -648,7 +652,7 @@ class GoAndTurn():
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         last_distance = distance + 1
         print('distance: '+str(distance))
-        while distance > 0.003:
+        while distance > 0.01:
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
