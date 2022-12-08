@@ -39,7 +39,7 @@ def publisher_limitation():
 
     for limitation in limitations:
         (x,y) = limitation
-        mapmsg.data[position_in_matrix(x,y)] = 70
+        mapmsg.data[position_in_matrix(x,y)] = 60
 
     rate = rospy.Rate(10)
     rate.sleep()

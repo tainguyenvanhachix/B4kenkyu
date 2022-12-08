@@ -433,33 +433,45 @@ class GoAndTurn():
     def add_wall(self,direction,front,left,right):
         if front <= SAFE_DISTANCE_FRONT:
             if direction == 'x_positive':
-                self.wall.append((self.X+1,self.Y))
+                if ((self.X+1,self.Y) not in self.back_tracking_point) and ((self.X+1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X+1,self.Y))
             elif direction == 'y_positive':
-                self.wall.append((self.X,self.Y+1))
+                if ((self.X,self.Y+1) not in self.back_tracking_point) and ((self.X,self.Y+1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y+1))
             elif direction == 'x_negative':
-                self.wall.append((self.X-1,self.Y))
+                if ((self.X-1,self.Y) not in self.back_tracking_point) and ((self.X-1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X-1,self.Y))
             elif direction == 'y_negative':
-                self.wall.append((self.X,self.Y-1))
+                if ((self.X,self.Y-1) not in self.back_tracking_point) and ((self.X,self.Y-1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y-1))
             self.publish_wall()
         if left <= SAFE_DISTANCE_FOOTBASE:
             if direction == 'x_positive':
-                self.wall.append((self.X,self.Y+1))
+                if ((self.X,self.Y+1) not in self.back_tracking_point) and ((self.X,self.Y+1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y+1))
             elif direction == 'y_positive':
-                self.wall.append((self.X-1,self.Y))
+                if ((self.X-1,self.Y) not in self.back_tracking_point) and ((self.X-1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X-1,self.Y))
             elif direction == 'x_negative':
-                self.wall.append((self.X,self.Y-1))
+                if ((self.X,self.Y-1) not in self.back_tracking_point) and ((self.X,self.Y-1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y-1))
             elif direction == 'y_negative':
-                self.wall.append((self.X+1,self.Y))
+                if ((self.X+1,self.Y) not in self.back_tracking_point) and ((self.X+1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X+1,self.Y))
             self.publish_wall()
         if right <= SAFE_DISTANCE_FOOTBASE:
             if direction == 'x_positive':
-                self.wall.append((self.X,self.Y-1))
+                if ((self.X,self.Y-1) not in self.back_tracking_point) and ((self.X,self.Y-1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y-1))
             elif direction == 'y_positive':
-                self.wall.append((self.X+1,self.Y))
+                if ((self.X+1,self.Y) not in self.back_tracking_point) and ((self.X+1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X+1,self.Y))
             elif direction == 'x_negative':
-                self.wall.append((self.X,self.Y+1))
+                if ((self.X,self.Y+1) not in self.back_tracking_point) and ((self.X,self.Y+1) not in self.trajectory):
+                    self.wall.append((self.X,self.Y+1))
             elif direction == 'y_negative':
-                self.wall.append((self.X-1,self.Y))
+                if ((self.X-1,self.Y) not in self.back_tracking_point) and ((self.X-1,self.Y) not in self.trajectory):
+                    self.wall.append((self.X-1,self.Y))
             self.publish_wall()
         self.wall = list(dict.fromkeys(self.wall))
 
@@ -523,7 +535,7 @@ class GoAndTurn():
         goal_y = self.Y*CELL_LENGTH
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         print('distance: '+str(distance))
-        while distance > 0.02:
+        while distance > 0.025:
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
@@ -676,7 +688,7 @@ class GoAndTurn():
         if (goal_x == self.X or goal_y == self.Y) and (abs(goal_angle - present_angle) < 0.02 or abs(abs(goal_angle - present_angle) - pi) < 0.02):
             if abs(goal_angle - present_angle) < 0.02:
                 self.go_straight_to_goal(goal_x,goal_y)
-            elif abs(abs(goal_angle - present_angle) - pi) < 0.06:
+            elif abs(abs(goal_angle - present_angle) - pi) < 0.2:
                 self.back(goal_x, goal_y)
                 goal_angle = goal_angle - pi
         else:
@@ -774,7 +786,7 @@ class GoAndTurn():
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         last_distance = distance + 1
         print('distance: '+str(distance))
-        while distance > 0.02:
+        while distance > 0.025:
             self.move_cmd.linear.x = -LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
@@ -834,7 +846,7 @@ class GoAndTurn():
         distance = sqrt(pow((goal_x - self.position.x), 2) + pow((goal_y - self.position.y), 2))
         last_distance = distance + 1
         print('distance: '+str(distance))
-        while distance > 0.02:
+        while distance > 0.025:
             self.move_cmd.linear.x = LINEAR_VEL
             self.move_cmd.angular.z = 0
             self.cmd_vel.publish(self.move_cmd)
