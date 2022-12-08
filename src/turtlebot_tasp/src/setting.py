@@ -12,5 +12,6 @@ LINEAR_VEL = 0.05
 ANGULAR_VEL = 0.2
 QUAT_90DEGREE = quaternion_from_euler (0, 0, pi/2)
 OMEGA_0 = 0.06
+OMEGA_1 = 0.02
 KA1 = 0.6
 KA2 = 0.3

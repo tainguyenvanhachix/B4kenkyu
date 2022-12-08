@@ -328,7 +328,6 @@ class GoAndTurn():
                     rotate_angle = pi - goal_angle
                 print('1goal_angle: '+str(goal_angle)+'  min_rotate: '+str(min_rotate_angle)+ ' rotate_angle: '+str(rotate_angle))
                 if abs(rotate_angle) < abs(min_rotate_angle):
-                    print('ok1')
                     min_rotate_angle = rotate_angle
                     self.goal_quat_z = 1
                     print('1quat_z: '+str(self.goal_quat_z))
@@ -340,7 +339,6 @@ class GoAndTurn():
                     rotate_angle =  pi/2  + pi - goal_angle
                 print('2goal_angle: '+str(goal_angle)+'  min_rotate: '+str(min_rotate_angle)+ ' rotate_angle: '+str(rotate_angle))
                 if abs(rotate_angle) < abs(min_rotate_angle):
-                    print('ok2')
                     min_rotate_angle = rotate_angle
                     self.goal_quat_z = - QUAT_90DEGREE[2]
                     print('2quat_z: '+str(self.goal_quat_z))
@@ -349,7 +347,6 @@ class GoAndTurn():
                 rotate_angle = - goal_angle
                 print('3goal_angle: '+str(goal_angle)+'  min_rotate: '+str(min_rotate_angle)+ ' rotate_angle: '+str(rotate_angle))
                 if abs(rotate_angle) <= abs(min_rotate_angle):
-                    print('ok3')
                     min_rotate_angle = rotate_angle
                     self.goal_quat_z = 0
                     print('3quat_z: '+str(self.goal_quat_z))
@@ -362,11 +359,9 @@ class GoAndTurn():
                     rotate_angle = - (pi + goal_angle) - pi/2
                 print('4goal_angle: '+str(goal_angle)+'  min_rotate: '+str(min_rotate_angle)+ ' rotate_angle: '+str(rotate_angle))
                 if abs(rotate_angle) < abs(min_rotate_angle):
-                    print('ok4')
                     min_rotate_angle = rotate_angle
                     self.goal_quat_z = QUAT_90DEGREE[2]
                     print('4quat_z: '+str(self.goal_quat_z))
-            print('ok')
         if min_rotate_angle != 2*pi:
             goal_angle = min_rotate_angle + goal_angle
             print('goal_angle from min_rotation_angle: '+str(goal_angle))
@@ -687,7 +682,7 @@ class GoAndTurn():
         else:
             self.turn_to_goal(goal_angle_real)
             self.go_straight_to_goal(goal_x,goal_y)
-        # Turn to next BTP if no BTP around
+
         self.move_cmd.linear.x = 0
         self.move_cmd.angular.z = 0
         self.cmd_vel.publish(self.move_cmd)
@@ -719,8 +714,6 @@ class GoAndTurn():
         # Check in line segment
         for wall in self.wall:
             if (x_max >= wall[0]) and (wall[0] >= x_min) and (y_max >= wall[1]) and (wall[1] >= y_min):
-                print('wall: ')
-                print(wall)
                 distance_center = abs(a*wall[0] + b*wall[1] + c)/sqrt(pow(a,2)+pow(b,2))
                 distance_top_right    = abs(a*(wall[0]-0.5) + b*(wall[1]-0.5) + c)/sqrt(pow(a,2)+pow(b,2))
                 distance_top_left     = abs(a*(wall[0]-0.5) + b*(wall[1]+0.5) + c)/sqrt(pow(a,2)+pow(b,2))
@@ -728,8 +721,6 @@ class GoAndTurn():
                 distance_bottom_left  = abs(a*(wall[0]+0.5) + b*(wall[1]+0.5) + c)/sqrt(pow(a,2)+pow(b,2))
                 if distance_center < 1 or distance_top_right < 0.5 or distance_top_left < 0.5 or distance_bottom_right < 0.5 or distance_bottom_left < 0.5:
                     check = False
-                if check == True:
-                    print(str(distance_center)+' '+str(distance_top_right)+' '+str(distance_top_left)+' '+str(distance_bottom_right)+' '+str(distance_bottom_left))
         return check
 
     def nearest_BTP(self, backtracking_point, min_distance, goal_angle, goal_angle_real, present_angle,goal_x,goal_y):
@@ -762,15 +753,9 @@ class GoAndTurn():
         goal_angle_real = 0
         for intermediary in self.trajectory:
             if intermediary != (self.X,self.Y):
-                print('intermediary: ')
-                print(intermediary)
                 check1 = self.check_go_directly(self.X, self.Y, intermediary)
-                print('check1 '+str(check1))
                 check2 = self.check_go_directly(goal_x, goal_y, intermediary)
-                print('check2 '+str(check2))
                 if check1 and check2:
-                    print('check go directly ok')
-                    print(intermediary)
                     go_to_intermediary = True
                     distance = sqrt(pow((intermediary[0] - self.X), 2) + pow((intermediary[1] - self.Y), 2)) + sqrt(pow((intermediary[0] - goal_x), 2) + pow((intermediary[1] - goal_y), 2))
                     if min_distance == 0 or distance < min_distance:

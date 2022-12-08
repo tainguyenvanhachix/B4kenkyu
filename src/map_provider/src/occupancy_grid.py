@@ -30,7 +30,7 @@ def publisher():
     for i in range(10000):
         mapmsg.data.append(-1)
 
-    rate = rospy.Rate(4)
+    rate = rospy.Rate(10)
     rate.sleep()
     pub.publish(mapmsg)
 
@@ -41,7 +41,7 @@ def publisher_limitation():
         (x,y) = limitation
         mapmsg.data[position_in_matrix(x,y)] = 70
 
-    rate = rospy.Rate(4)
+    rate = rospy.Rate(10)
     rate.sleep()
     pub.publish(mapmsg)
 
@@ -50,7 +50,7 @@ def publisher_wall(data):
 
     mapmsg.data[position_in_matrix(data.x,data.y)] = 100
 
-    rate = rospy.Rate(4)
+    rate = rospy.Rate(10)
     rate.sleep()
     pub.publish(mapmsg)
 
@@ -59,7 +59,7 @@ def publisher_BTP(data):
 
     mapmsg.data[position_in_matrix(data.x,data.y)] = 0
 
-    rate = rospy.Rate(4)
+    rate = rospy.Rate(10)
     rate.sleep()
     pub.publish(mapmsg)
 
