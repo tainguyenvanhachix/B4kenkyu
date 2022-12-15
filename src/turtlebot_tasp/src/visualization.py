@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import rospy
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
+from nav_msgs.msg import OccupancyGrid
+
 
 rospy.init_node('line_pub_example')
 pub_line_min_dist = rospy.Publisher('~line_min_dist', Marker, queue_size=1)

@@ -31,7 +31,9 @@ class GoAndTurn():
         self.tf_listener.waitForTransform('odom', 'base_footprint', rospy.Time(), rospy.Duration(1.0))
 
         # Setting of wall, trajectory, backtracking point at the beginging
-        self.targets =[(2,0),(2,-1),(0,-1),(0,3),(4,3),(4,-1),(4,1),(3,1),(3,2),(2,2),(2,0),(0,0)]
+        # self.targets =[(2,0),(2,-1),(0,-1),(0,3),(4,3),(4,-1),(4,1),(3,1),(3,2),(2,2),(2,0),(0,0)] # offline1
+        # self.targets =[(2,0),(2,3),(4,3),(4,-1),(4,1),(3,1),(3,2),(2,3),(0,3),(0,-1),(2,-1),(0,0)] # online
+        self.targets =[(2,0),(2,2),(3,2),(3,1),(4,1),(4,-1),(4,3),(0,3),(0,-1),(2,-1),(0,0)]
 
         # Maker1 init
         self.marker1.header.frame_id = "map"
@@ -72,12 +74,12 @@ class GoAndTurn():
         for target in self.targets:
             (goal_x,goal_y) = target
             goal_angle = atan2(goal_y*CELL_LENGTH - self.position.y, goal_x*CELL_LENGTH - self.position.x)
-            
-            if target == (4,1):
-                self.back(goal_x,goal_y)
-            else:
-                self.turn_to_goal(goal_angle)
-                self.go_straight_to_goal(goal_x,goal_y)
+
+            # if target == (4,1):
+            #     self.back(goal_x,goal_y)
+            # else:
+            self.turn_to_goal(goal_angle)
+            self.go_straight_to_goal(goal_x,goal_y)
 
             # Publish the trajectory marker and delete BTP marker
             self.line_point = Point()
