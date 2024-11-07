@@ -3,8 +3,7 @@ import rospy
 from sensor_msgs.msg import LaserScan
 
 def callback(data):
-    print('90 degree:'+str(data.ranges[0])+'m ')
-    print('intensities: '+str(data.intensities[0]))
+    print('0 degree:'+str(data.ranges[0])+' m ')
 
 def sub_scan():
 
